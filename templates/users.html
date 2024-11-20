@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Users</title>
+</head>
+<body>
+    <h1>Users</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Telegram ID</th>
+            <th>Wallet Address</th>
+            <th>Referral Link</th>
+            <th>Invited Count</th>
+            <th>Status</th>
+            <th>Balance</th>
+            <th>Action</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user[0] }}</td>
+            <td>{{ user[2] }}</td>
+            <td>{{ user[1] }}</td>
+            <td>{{ user[3] }}</td>
+            <td>{{ user[4] }}</td>
+            <td>{{ user[5] }}</td>
+            <td>{{ user[6] }}</td>
+            <td>{{ user[7] }}</td>
+            <td>
+                <form action="/update_status" method="post">
+                    <input type="hidden" name="user_id" value="{{ user[1] }}">
+                    <select name="status">
+                        <option value="ordinary" {% if user[6] == 'ordinary' %}selected{% endif %}>Ordinary</option>
+                        <option value="privileged" {% if user[6] == 'privileged' %}selected{% endif %}>Privileged</option>
+                    </select>
+                    <button type="submit">Update</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="/">Back to Admin Panel</a>
+</body>
+</html>
