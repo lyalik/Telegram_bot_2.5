@@ -1,22 +1,32 @@
-# config.py
-TELEGRAM_BOT_TOKEN = '7554899021:AAFLbYwilRZtAc0NrtRmJPHWhHXk06bG2r8'
+from dotenv import load_dotenv
+import os
+
+# Загрузка переменных окружения из файла .env
+load_dotenv()
+
+# Telegram Bot Token
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+# TON Client Configuration
 TON_CLIENT_CONFIG = {
     'network': {
         'server_address': 'https://testnet.toncenter.com/api/v2/jsonRPC',
-        'send_retries': 3,
-        'message_retries': 3,
-        'message_processing_timeout': 30
+        'endpoints': ['https://testnet.toncenter.com/api/v2/jsonRPC']
     },
     'crypto': {
         'mnemonic_dict': 1,
         'hdpath': "m/44'/396'/0'/0/0",
         'keypair_type': 1,
-        'api_key': 'YOUR_TON_API_KEY'
+        'api_key': os.getenv('TON_API_KEY')
     },
     'abi': {},
     'boc': {}
 }
+
+# Exchange API Configuration
 EXCHANGE_API_URL = 'https://api.exchange.com/convert'
-TON_API_KEY = '7e871f1f84625ca426bc2f4da176035b6fb502b7280604d420aa2a1789c6571c'
-CHARITY_WALLET_ADDRESS = 'YOUR_CHARITY_WALLET_ADDRESS'
-MAIN_ACCOUNT_WALLET_ADDRESS = 'YOUR_MAIN_ACCOUNT_WALLET_ADDRESS'
+EXCHANGE_API_KEY = os.getenv('EXCHANGE_API_KEY')
+
+# Wallet Addresses
+CHARITY_WALLET_ADDRESS = os.getenv('CHARITY_WALLET_ADDRESS')
+MAIN_ACCOUNT_WALLET_ADDRESS = os.getenv('MAIN_ACCOUNT_WALLET_ADDRESS')
