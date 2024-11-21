@@ -1,4 +1,4 @@
-# config.py
+# config.py1
 TELEGRAM_BOT_TOKEN = '7554899021:AAFLbYwilRZtAc0NrtRmJPHWhHXk06bG2r8'
 TON_CLIENT_CONFIG = {
     'network': {
