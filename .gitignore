@@ -1,2 +1,3 @@
-config.py
-bot.db
+/config.py
+/bot.db
+/.env
