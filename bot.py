@@ -1,4 +1,5 @@
 import telebot
+from telebot import types
 from tonclient.client import TonClient, ClientConfig
 from tonclient.types import ParamsOfEncodeMessage, ParamsOfSendMessage, ParamsOfSign
 from tonclient.types import NetworkConfig, CryptoConfig
@@ -7,6 +8,8 @@ import sqlite3
 import config
 import threading
 import logging
+from jinja2 import Environment, FileSystemLoader
+from datetime import datetime, timedelta
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +56,12 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS transactions (
                     amount REAL,
                     type TEXT,
                     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS posts (
+                    id INTEGER PRIMARY KEY,
+                    text TEXT,
+                    type TEXT,
+                    publication_date TIMESTAMP)''')
 conn.commit()
 
 # Функция для создания кошелька TON
@@ -94,6 +103,12 @@ def convert_rub_to_ton(amount_rub):
         logger.error(f"Error converting RUB to TON: {e}")
         raise
 
+# Функция для рендеринга шаблонов
+def render_template(template_name, context):
+    env = Environment(loader=FileSystemLoader('templates'))
+    template = env.get_template(template_name)
+    return template.render(context)
+
 # Команда для регистрации
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -110,13 +125,25 @@ def start(message):
             cursor.execute("INSERT INTO users (telegram_id, name, wallet_address, referral_link) VALUES (?, ?, ?, ?)",
                            (user_id, name, wallet_address, referral_link))
             conn.commit()
-            bot.reply_to(message, f"Привет, {name}! Вы успешно зарегистрированы.")
+            welcome_message = render_template('welcome.html', {'name': name, 'referral_link': referral_link})
+            bot.reply_to(message, welcome_message, parse_mode='HTML')
         except Exception as e:
             logger.error(f"Error registering user: {e}")
             bot.reply_to(message, "Произошла ошибка при регистрации. Пожалуйста, попробуйте позже.")
     else:
         bot.reply_to(message, f"Привет, {name}! Вы уже зарегистрированы.")
+        show_main_menu(message)
     conn.close()
+
+# Функция для отображения главного меню
+def show_main_menu(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    balance_btn = types.KeyboardButton('/balance')
+    withdraw_btn = types.KeyboardButton('/withdraw')
+    donate_btn = types.KeyboardButton('/donate')
+    subscribe_btn = types.KeyboardButton('/subscribe')
+    markup.add(balance_btn, withdraw_btn, donate_btn, subscribe_btn)
+    bot.send_message(message.chat.id, "Выберите действие:", reply_markup=markup)
 
 # Команда для оплаты подписки
 @bot.message_handler(commands=['subscribe'])
@@ -227,7 +254,13 @@ def handle_referral(message):
         bot.reply_to(message, "Вы уже зарегистрированы.")
     else:
         try:
-            wallet_address = create_wallet()
+            # Проверяем, есть ли у пользователя кошелек
+            cursor.execute("SELECT wallet_address FROM users WHERE telegram_id=?", (user_id,))
+            wallet_address = cursor.fetchone()
+
+            if not wallet_address:
+                wallet_address = create_wallet()
+
             referral_link = f"https://t.me/{bot.get_me().username}?start={user_id}"
             cursor.execute("INSERT INTO users (telegram_id, name, wallet_address, referral_link) VALUES (?, ?, ?, ?)",
                            (user_id, message.from_user.first_name, wallet_address, referral_link))
@@ -247,6 +280,142 @@ def handle_referral(message):
             logger.error(f"Error handling referral: {e}")
             bot.reply_to(message, "Произошла ошибка при обработке реферальной ссылки. Пожалуйста, попробуйте позже.")
 
+# Административные команды
+@bot.message_handler(commands=['admin_stats'])
+def admin_stats(message):
+    if message.from_user.id not in config.ADMIN_USER_IDS:
+        bot.reply_to(message, "У вас нет доступа к этой команде.")
+        return
+
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM users WHERE status='privileged'")
+    privileged_users = cursor.fetchone()[0]
+
+    cursor.execute("SELECT SUM(amount) FROM transactions WHERE type='subscription'")
+    total_subscriptions = cursor.fetchone()[0]
+
+    cursor.execute("SELECT SUM(amount) FROM transactions WHERE type='donate'")
+    total_donations = cursor.fetchone()[0]
+
+    stats_message = (
+        f"Общее количество подписчиков: {total_users}\n"
+        f"Количество привилегированных пользователей: {privileged_users}\n"
+        f"Сумма подписок: {total_subscriptions} TON\n"
+        f"Сумма донатов: {total_donations} TON"
+    )
+    bot.reply_to(message, stats_message)
+
+# Команда для управления доступами
+@bot.message_handler(commands=['admin_manage_access'])
+def admin_manage_access(message):
+    if message.from_user.id not in config.ADMIN_USER_IDS:
+        bot.reply_to(message, "У вас нет доступа к этой команде.")
+        return
+
+    args = message.text.split()
+    if len(args) < 3:
+        bot.reply_to(message, "Используйте команду в формате: /admin_manage_access <user_id> <add/remove>")
+        return
+
+    user_id = int(args[1])
+    action = args[2]
+
+    if action == 'add':
+        cursor.execute("UPDATE users SET status='privileged' WHERE telegram_id=?", (user_id,))
+        bot.reply_to(message, f"Пользователь {user_id} добавлен в приватную комнату.")
+    elif action == 'remove':
+        cursor.execute("UPDATE users SET status='ordinary' WHERE telegram_id=?", (user_id,))
+        bot.reply_to(message, f"Пользователь {user_id} удален из приватной комнаты.")
+    else:
+        bot.reply_to(message, "Неверная команда. Используйте 'add' или 'remove'.")
+
+    conn.commit()
+
+# Команда для просмотра истории транзакций
+@bot.message_handler(commands=['admin_view_transactions'])
+def admin_view_transactions(message):
+    if message.from_user.id not in config.ADMIN_USER_IDS:
+        bot.reply_to(message, "У вас нет доступа к этой команде.")
+        return
+
+    cursor.execute("SELECT * FROM transactions")
+    transactions = cursor.fetchall()
+
+    if transactions:
+        transactions_message = "История транзакций:\n"
+        for transaction in transactions:
+            transactions_message += f"ID: {transaction[0]}, User ID: {transaction[1]}, Amount: {transaction[2]} TON, Type: {transaction[3]}, Date: {transaction[4]}\n"
+        bot.reply_to(message, transactions_message)
+    else:
+        bot.reply_to(message, "Нет транзакций для отображения.")
+
+# Команда для запланированных постов
+@bot.message_handler(commands=['admin_schedule_post'])
+def admin_schedule_post(message):
+    if message.from_user.id not in config.ADMIN_USER_IDS:
+        bot.reply_to(message, "У вас нет доступа к этой команде.")
+        return
+
+    args = message.text.split(maxsplit=3)
+    if len(args) < 4:
+        bot.reply_to(message, "Используйте команду в формате: /admin_schedule_post <type> <date> <text>")
+        return
+
+    post_type = args[1]
+    publication_date = args[2]
+    text = args[3]
+
+    try:
+        publication_date = datetime.strptime(publication_date, '%Y-%m-%d %H:%M:%S')
+        schedule_post(text, post_type, publication_date)
+        bot.reply_to(message, "Пост успешно запланирован.")
+    except Exception as e:
+        logger.error(f"Error scheduling post: {e}")
+        bot.reply_to(message, "Произошла ошибка при планировании поста. Пожалуйста, проверьте формат даты.")
+
+# Еженедельные отчёты для администратора
+def send_weekly_report():
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM users WHERE status='privileged'")
+    privileged_users = cursor.fetchone()[0]
+
+    cursor.execute("SELECT SUM(amount) FROM transactions WHERE type='subscription'")
+    total_subscriptions = cursor.fetchone()[0]
+
+    cursor.execute("SELECT SUM(amount) FROM transactions WHERE type='donate'")
+    total_donations = cursor.fetchone()[0]
+
+    report_message = (
+        f"Еженедельный отчёт:\n"
+        f"Общее количество подписчиков: {total_users}\n"
+        f"Количество привилегированных пользователей: {privileged_users}\n"
+        f"Сумма подписок: {total_subscriptions} TON\n"
+        f"Сумма донатов: {total_donations} TON"
+    )
+
+    for admin_id in config.ADMIN_USER_IDS:
+        bot.send_message(admin_id, report_message)
+
+# Запланированные посты
+def schedule_post(text, post_type, publication_date):
+    cursor.execute("INSERT INTO posts (text, type, publication_date) VALUES (?, ?, ?)",
+                   (text, post_type, publication_date))
+    conn.commit()
+
 # Запуск бота
 if __name__ == '__main__':
     bot.polling()
+
+    # Запуск еженедельного отчёта
+    import schedule
+    import time
+
+    schedule.every().monday.at("09:00").do(send_weekly_report)
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)

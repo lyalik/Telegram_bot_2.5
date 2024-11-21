@@ -385,6 +385,8 @@ sh
 
 pip install pyTelegramBotAPI ton-client-py
 pip install pytest
+pip install python-dotenv jinja2
+
 Запуск бота:
 
 sh
