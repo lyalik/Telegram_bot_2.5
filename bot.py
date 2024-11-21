@@ -51,10 +51,14 @@ def create_wallet():
     with open('wallet.abi.json', 'r') as f:
         wallet_abi = f.read()
 
+    # Загрузка TVC кошелька
+    with open('wallet.tvc', 'rb') as f:
+        wallet_tvc = f.read()
+
     # Создание кошелька
     params = ParamsOfDeployContract(
         abi=wallet_abi,
-        tvc='wallet.tvc',
+        tvc=wallet_tvc,
         constructor_input=None,
         signer=None
     )

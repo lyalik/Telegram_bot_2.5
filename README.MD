@@ -384,7 +384,7 @@ source myenv/bin/activate
 sh
 
 pip install pyTelegramBotAPI ton-client-py
-
+pip install pytest
 Запуск бота:
 
 sh
