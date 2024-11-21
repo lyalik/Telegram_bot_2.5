@@ -1,5 +1,5 @@
 # config.py1
-TELEGRAM_BOT_TOKEN = '7554899021:AAFLbYwilRZtAc0NrtRmJPHWhHXk06bG2r8'
+TELEGRAM_BOT_TOKEN = ':'
 TON_CLIENT_CONFIG = {
     'network': {
         'server_address': 'https://testnet.toncenter.com/api/v2/jsonRPC',
@@ -17,6 +17,6 @@ TON_CLIENT_CONFIG = {
     'boc': {}
 }
 EXCHANGE_API_URL = 'https://api.exchange.com/convert'
-TON_API_KEY = '7e871f1f84625ca426bc2f4da176035b6fb502b7280604d420aa2a1789c6571c'
+TON_API_KEY = ''
 CHARITY_WALLET_ADDRESS = 'YOUR_CHARITY_WALLET_ADDRESS'
 MAIN_ACCOUNT_WALLET_ADDRESS = 'YOUR_MAIN_ACCOUNT_WALLET_ADDRESS'
