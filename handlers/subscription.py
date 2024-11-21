@@ -1,5 +1,7 @@
 import sqlite3
 from telebot import types
+from telebot import TeleBot
+
 
 def get_cursor():
     conn = sqlite3.connect('bot.db', check_same_thread=False)
@@ -14,7 +16,7 @@ def subscribe(message):
 
     if user:
         wallet_address = user[3]
-        message.reply_to(message, f"Для оплаты подписки переведите 1 TON на адрес: {wallet_address}")
+        bot.send_message(message.chat.id, f"Для оплаты подписки переведите 1 TON на адрес: {wallet_address}")
     else:
-        message.reply_to(message, "Вы не зарегистрированы. Используйте команду /start для регистрации.")
+        bot.send_message(message.chat.id, "Вы не зарегистрированы. Используйте команду /start для регистрации.")
     conn.close()

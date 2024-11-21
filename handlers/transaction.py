@@ -1,13 +1,14 @@
 import sqlite3
 import config
 import logging
+from telebot import TeleBot
 from telebot import types
 from tonclient.types import ParamsOfEncodeMessage, ParamsOfSendMessage, ParamsOfSign
 from tonclient.client import TonClient, ClientConfig
 from tonclient.types import NetworkConfig, CryptoConfig
 
 logger = logging.getLogger(__name__)
-
+bot = TeleBot(config.TELEGRAM_BOT_TOKEN)
 def get_cursor():
     conn = sqlite3.connect('bot.db', check_same_thread=False)
     cursor = conn.cursor()
@@ -28,9 +29,9 @@ def balance(message):
     cursor.execute("SELECT balance FROM users WHERE telegram_id=?", (user_id,))
     balance = cursor.fetchone()
     if balance:
-        message.reply_to(message, f"Ваш текущий баланс: {balance[0]} TON")
+        bot.send_message(message.chat.id, f"Ваш текущий баланс: {balance[0]} TON")
     else:
-        message.reply_to(message, "Вы не зарегистрированы. Используйте команду /start для регистрации.")
+        bot.send_message(message.chat.id, "Вы не зарегистрированы. Используйте команду /start для регистрации.")
     conn.close()
 
 def withdraw(message):
@@ -81,14 +82,14 @@ def withdraw(message):
 
                 cursor.execute("UPDATE users SET balance=0 WHERE telegram_id=?", (user_id,))
                 conn.commit()
-                message.reply_to(message, f"Средства успешно выведены на ваш кошелек: {wallet_address}")
+                bot.send_message(message.chat.id, f"Средства успешно выведены на ваш кошелек: {wallet_address}")
             except Exception as e:
                 logger.error(f"Error withdrawing funds: {e}")
-                message.reply_to(message, "Произошла ошибка при выводе средств. Пожалуйста, попробуйте позже.")
+                bot.send_message(message.chat.id, "Произошла ошибка при выводе средств. Пожалуйста, попробуйте позже.")
         else:
-            message.reply_to(message, "У вас недостаточно средств для вывода.")
+            bot.send_message(message.chat.id, "У вас недостаточно средств для вывода.")
     else:
-        message.reply_to(message, "Вы не зарегистрированы. Используйте команду /start для регистрации.")
+        bot.send_message(message.chat.id, "Вы не зарегистрированы. Используйте команду /start для регистрации.")
     conn.close()
 
 def donate(message):
@@ -98,7 +99,7 @@ def donate(message):
     user = cursor.fetchone()
 
     if user:
-        message.reply_to(message, f"Для доната переведите любую сумму TON на адрес: {config.CHARITY_WALLET_ADDRESS}")
+        bot.send_message(message.chat.id, f"Для доната переведите любую сумму TON на адрес: {config.CHARITY_WALLET_ADDRESS}")
     else:
-        message.reply_to(message, "Вы не зарегистрированы. Используйте команду /start для регистрации.")
+        bot.send_message(message.chat.id, "Вы не зарегистрированы. Используйте команду /start для регистрации.")
     conn.close()

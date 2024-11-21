@@ -15,7 +15,7 @@ def get_cursor():
 # Административные команды
 def admin_stats(message):
     if message.from_user.id not in config.ADMIN_USER_IDS:
-        message.reply_to(message, "У вас нет доступа к этой команде.")
+        bot.send_message(message.chat.id, "У вас нет доступа к этой команде.")
         return
 
     cursor, conn = get_cursor()
@@ -37,17 +37,17 @@ def admin_stats(message):
         f"Сумма подписок: {total_subscriptions} TON\n"
         f"Сумма донатов: {total_donations} TON"
     )
-    message.reply_to(message, stats_message)
+    bot.send_message(message.chat.id, stats_message)
     conn.close()
 
 def admin_manage_access(message):
     if message.from_user.id not in config.ADMIN_USER_IDS:
-        message.reply_to(message, "У вас нет доступа к этой команде.")
+        bot.send_message(message.chat.id, "У вас нет доступа к этой команде.")
         return
 
     args = message.text.split()
     if len(args) < 3:
-        message.reply_to(message, "Используйте команду в формате: /admin_manage_access <user_id> <add/remove>")
+        bot.send_message(message.chat.id, "Используйте команду в формате: /admin_manage_access <user_id> <add/remove>")
         return
 
     user_id = int(args[1])
@@ -56,19 +56,19 @@ def admin_manage_access(message):
     cursor, conn = get_cursor()
     if action == 'add':
         cursor.execute("UPDATE users SET status='privileged' WHERE telegram_id=?", (user_id,))
-        message.reply_to(message, f"Пользователь {user_id} добавлен в приватную комнату.")
+        bot.send_message(message.chat.id, f"Пользователь {user_id} добавлен в приватную комнату.")
     elif action == 'remove':
         cursor.execute("UPDATE users SET status='ordinary' WHERE telegram_id=?", (user_id,))
-        message.reply_to(message, f"Пользователь {user_id} удален из приватной комнаты.")
+        bot.send_message(message.chat.id, f"Пользователь {user_id} удален из приватной комнаты.")
     else:
-        message.reply_to(message, "Неверная команда. Используйте 'add' или 'remove'.")
+        bot.send_message(message.chat.id, "Неверная команда. Используйте 'add' или 'remove'.")
 
     conn.commit()
     conn.close()
 
 def admin_view_transactions(message):
     if message.from_user.id not in config.ADMIN_USER_IDS:
-        message.reply_to(message, "У вас нет доступа к этой команде.")
+        bot.send_message(message.chat.id, "У вас нет доступа к этой команде.")
         return
 
     cursor, conn = get_cursor()
@@ -79,19 +79,19 @@ def admin_view_transactions(message):
         transactions_message = "История транзакций:\n"
         for transaction in transactions:
             transactions_message += f"ID: {transaction[0]}, User ID: {transaction[1]}, Amount: {transaction[2]} TON, Type: {transaction[3]}, Date: {transaction[4]}\n"
-        message.reply_to(message, transactions_message)
+        bot.send_message(message.chat.id, transactions_message)
     else:
-        message.reply_to(message, "Нет транзакций для отображения.")
+        bot.send_message(message.chat.id, "Нет транзакций для отображения.")
     conn.close()
 
 def admin_schedule_post(message):
     if message.from_user.id not in config.ADMIN_USER_IDS:
-        message.reply_to(message, "У вас нет доступа к этой команде.")
+        bot.send_message(message.chat.id, "У вас нет доступа к этой команде.")
         return
 
     args = message.text.split(maxsplit=3)
     if len(args) < 4:
-        message.reply_to(message, "Используйте команду в формате: /admin_schedule_post <type> <date> <text>")
+        bot.send_message(message.chat.id, "Используйте команду в формате: /admin_schedule_post <type> <date> <text>")
         return
 
     post_type = args[1]
@@ -101,10 +101,10 @@ def admin_schedule_post(message):
     try:
         publication_date = datetime.strptime(publication_date, '%Y-%m-%d %H:%M:%S')
         schedule_post(text, post_type, publication_date)
-        message.reply_to(message, "Пост успешно запланирован.")
+        bot.send_message(message.chat.id, "Пост успешно запланирован.")
     except Exception as e:
         logger.error(f"Error scheduling post: {e}")
-        message.reply_to(message, "Произошла ошибка при планировании поста. Пожалуйста, проверьте формат даты.")
+        bot.send_message(message.chat.id, "Произошла ошибка при планировании поста. Пожалуйста, проверьте формат даты.")
 
 def schedule_post(text, post_type, publication_date):
     cursor, conn = get_cursor()
@@ -128,7 +128,7 @@ def send_weekly_report():
     total_donations = cursor.fetchone()[0]
 
     report_message = (
-        f"Еженедельный отчёт:\n"
+        f"Еженедельный отчет:\n"
         f"Общее количество подписчиков: {total_users}\n"
         f"Количество привилегированных пользователей: {privileged_users}\n"
         f"Сумма подписок: {total_subscriptions} TON\n"

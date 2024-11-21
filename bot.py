@@ -11,6 +11,9 @@ import logging
 from jinja2 import Environment, FileSystemLoader
 from datetime import datetime, timedelta
 from handlers import admin, main_menu, referral, subscription, transaction, user
+from handlers.main_menu import show_main_menu
+from handlers.subscription import subscribe
+
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -82,7 +85,7 @@ bot.register_message_handler(admin.admin_schedule_post, commands=['admin_schedul
 if __name__ == '__main__':
     bot.polling()
 
-    # Запуск еженедельного отчёта
+    # Запуск еженедельного отчета
     import schedule
     import time
 
