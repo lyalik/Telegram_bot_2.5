@@ -10,19 +10,13 @@ TON_CLIENT_CONFIG = {
     'crypto': {
         'mnemonic_dict': 1,
         'hdpath': "m/44'/396'/0'/0/0",
-        'keypair_type': 1
+        'keypair_type': 1,
+        'api_key': 'YOUR_TON_API_KEY'
     },
-    'abi': {
-        'type': 'Json',
-        'value': ''
-    },
-    'boc': {
-        'type': 'Base64',
-        'value': ''
-    }
+    'abi': {},
+    'boc': {}
 }
-TON_API_KEY = '7e871f1f84625ca426bc2f4da176035b6fb502b7280604d420aa2a1789c6571c'
 EXCHANGE_API_URL = 'https://api.exchange.com/convert'
-EXCHANGE_API_KEY = 'YOUR_EXCHANGE_API_KEY'
+TON_API_KEY = '7e871f1f84625ca426bc2f4da176035b6fb502b7280604d420aa2a1789c6571c'
 CHARITY_WALLET_ADDRESS = 'YOUR_CHARITY_WALLET_ADDRESS'
 MAIN_ACCOUNT_WALLET_ADDRESS = 'YOUR_MAIN_ACCOUNT_WALLET_ADDRESS'

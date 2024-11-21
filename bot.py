@@ -1,6 +1,6 @@
 import telebot
 from tonclient.client import TonClient, ClientConfig
-from tonclient.types import ParamsOfCreateWallet, ParamsOfTransfer
+from tonclient.types import ParamsOfDeployContract, ParamsOfTransfer
 import requests
 import sqlite3
 import config
@@ -47,8 +47,18 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS transactions (
 
 # Функция для создания кошелька TON
 def create_wallet():
-    params = ParamsOfCreateWallet(workchain=0)
-    result = client.processing.processing_create_wallet(params=params)
+    # Загрузка ABI кошелька
+    with open('wallet.abi.json', 'r') as f:
+        wallet_abi = f.read()
+
+    # Создание кошелька
+    params = ParamsOfDeployContract(
+        abi=wallet_abi,
+        tvc='wallet.tvc',
+        constructor_input=None,
+        signer=None
+    )
+    result = client.processing.processing_deploy_contract(params=params)
     return result.address
 
 
@@ -115,7 +125,13 @@ def withdraw(message):
     if user:
         balance, wallet_address = user
         if balance > 0:
-            params = ParamsOfTransfer(address=wallet_address, amount=int(balance * 1e9))
+            params = ParamsOfTransfer(
+                address=wallet_address,
+                amount=int(balance * 1e9),
+                abi=None,
+                signer=None,
+                send_events=False
+            )
             client.processing.processing_transfer(params=params)
             cursor.execute("UPDATE users SET balance=0 WHERE telegram_id=?", (user_id,))
             conn.commit()
