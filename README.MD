@@ -1,3 +1,20 @@
+/TelegramBot_2.5
+│
+├── bot.py
+├── config.py
+├── handlers
+│   ├── admin.py
+│   ├── main_menu.py
+│   ├── referral.py
+│   ├── subscription.py
+│   ├── transaction.py
+│   └── user.py
+├── templates
+│   └── welcome.html
+├── wallet.abi.json
+└── wallet.tvc
+
+
 Чат-бот по техническому заданию
 1. Основной функционал бота
 1.1. Платежная система
